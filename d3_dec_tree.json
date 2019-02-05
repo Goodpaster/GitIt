@@ -1,0 +1,5 @@
+{"nodes":[{"id":0, "test":"I", "level":"0", "type":"start"},
+          {"id":1, "test":"Do I currently have an old version?", "level":"1", "type":"decision"},
+          {"id":2, "test":"Is there already a git repository?", "level":"1", "type":"decision"}],
+ "links":[{"source":0, "target":1, "text":"need code."},
+          {"source":0, "target":2, "text":"wrote code."}]}
