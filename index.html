@@ -7,10 +7,32 @@
   <body>
     <h1>Follow the git command road...</h1>
     <h2>By Daniel Graham </h2>
+    <svg width="960" height="600"></svg>
     <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
 
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
 
+var simulation = d3.forceSimulation()
+    .force("link",
+        d3.forceLink().id(function(d) { return d.id; })
+        .distance(function(d) { return (d.source.level / 2) + (d.target.level / 2); })
+        .strength(function(d) { return 0.75; })
+    )
+    .force("charge", d3.forceManyBody().strength(-200));
+    .force("sink", d3.forceY(0).strength(0.5));
+    .force("float", d3.force(height).strength(0.1));
+
+d3.json("d3_dec_tree.json", function(error, graph) {
+    if (error) throw error;
+
+    var link = svg.append("g")
+        .attr("class", "links");
+    
+    var node =  
+                 
     </script>
   </body>
 </html>
