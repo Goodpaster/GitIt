@@ -7,12 +7,16 @@ h2 {
 }
 
 .links line {
+	strok: #999;
+	stroke-opacity: 0.6;
 }
 
 .links text {
 }
 
 .nodes circle {
+	stroke: #fff;
+	stroke-width: 1.5px;
 }
 
 .nodes square {
