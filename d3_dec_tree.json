@@ -1,5 +1,18 @@
-{"nodes":[{"id":0, "test":"I", "level":"0", "type":"start"},
-          {"id":1, "test":"Do I currently have an old version?", "level":"1", "type":"decision"},
-          {"id":2, "test":"Is there already a git repository?", "level":"1", "type":"decision"}],
- "links":[{"source":0, "target":1, "text":"need code."},
-          {"source":0, "target":2, "text":"wrote code."}]}
+{
+  "nodes" : [
+          {"id": 0, "test": "I", "level": 0, "type": "start", "git_text": null},
+          {"id": 1, "test": "Do I currently have an old version?", "level": 1, "type": "decision", "git_text": null},
+          {"id": 2, "test": "Is there already a git repository?", "level": 1, "type":"decision", "git_text": null},
+          {"id": 3, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
+          {"id": 4, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
+          {"id": 5, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
+          {"id": 6, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"}
+  ],
+ "links":[{"source": 0, "target": 1, "value": 1, "text": "need code."},
+          {"source": 0, "target": 2, "value": 1,  "text": "wrote code."},
+          {"source": 1, "target": 3, "value": 1,  "text": "No"},
+          {"source": 1, "target": 4, "value": 1,  "text": "No"},
+          {"source": 2, "target": 5, "value": 1,  "text": "No"},
+          {"source": 2, "target": 6, "value": 1,  "text": "No"}
+  ]
+}
