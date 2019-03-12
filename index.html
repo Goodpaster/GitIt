@@ -1,43 +1,33 @@
+<!DOCTYPE html>
 <html>
-<body>
-<svg id='viz'></svg>
-</body>
+  <head>
+    <title>Git It!</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+  </head>
+  <body>
+    <h1>Follow the git command road...</h1>
+    <h2>By Daniel Graham </h2>
+    <svg class='graph'></svg>
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <script type="text/javascript">
 
-<script src='https://d3js.org/d3.v5.min.js'></script>
-<script>
-var width = 800;
-var height = 600;
-var color = d3.scaleOrdinal(d3.schemeCategory10);
+var width = 960
+var height = 600
+d3.json("d3_dec_tree.json").then(function(tree) {
 
-d3.json("d3_dec_tree.json").then(function(graph) {
+    var rect_width = 200 
+    var rect_height = 50
+    var graph = d3.select(".graph")
+        .attr("width", width)
+        .attr("height", height);
 
-var rect_width = 200;
-var rect_height = 30;
-var rect_full_height = 100;
+    var container = graph.append('g')
 
-var label = {
-    'nodes': [],
-    'links': []
-};
+    var collisionForce = rectCollide()
+        .size(function(d) { return [rect_width+10, rect_height+10] })
 
-var collisionForce = rectCollide()
-    .size(function(d) { console.log(d3.select(this).attr("width")); return [d3.select(this).attr("width"), d3.select(this).attr("height")]; })
-
-var boxForce = boundedBox()
-    .bounds([[0, 0], [width, height]])
-    .size(function (d) { return [d3.select(d).attr('width'), d3.select(d).attr('height')]; })
-
-graph.nodes.forEach(function(d, i) {
-    label.nodes.push({node: d});
-    label.nodes.push({node: d});
-    label.links.push({
-        source: i * 2,
-        target: i * 2 + 1
-    });
-});
-
-var graphLayout = d3.forceSimulation(graph.nodes)
-    .force("x", d3.forceX(width / 2).strength(function(d) {
+    var simulation = d3.forceSimulation()
+        .force("x", d3.forceX((width / 2) - (rect_width/2)).strength(function(d) {
             var dict = {
                 "start": 1,
                 "end": 0,
@@ -45,9 +35,7 @@ var graphLayout = d3.forceSimulation(graph.nodes)
             };
             return dict[d.type];
             }))
-    .force('collision', collisionForce)
-    //.force('box', boxForce)
-    .force("y", d3.forceY(function(d) {
+        .force("y", d3.forceY(function(d) {
             var dict = {
                 "start": 0,
                  "end": height,
@@ -62,358 +50,236 @@ var graphLayout = d3.forceSimulation(graph.nodes)
             };
             return dict[d.type];
             }))
-    .force("link", d3.forceLink(graph.links).id(function(d) {return d.id; }).distance(50).strength(1))
-    .on("tick", ticked);
+        .force('charge', d3.forceManyBody().strength(-1000)) //currently on the upper left corner of the object.
+        .force('collision', collisionForce)
+        .nodes(tree.nodes)
+        .force("link", d3.forceLink(tree.links).id(function(d) {return d.id; }).distance(100).strength(0.5))
+        .on('tick', ticked)
 
-var adjlist = [];
+    var label = {
+        'nodes': [],
+        'links': []
+    };
 
-graph.links.forEach(function(d) {
-    adjlist[d.source.index + "-" + d.target.index] = true;
-    adjlist[d.target.index + "-" + d.source.index] = true;
-});
+    tree.nodes.forEach(function(d, i) {
+        label.nodes.push({node: d});
+        label.nodes.push({node: d});
+        label.links.push({
+            source: i * 2,
+            target: i * 2 + 1
+        });
+    });
 
-function neigh(a, b) {
-    return a == b || adjlist[a + "-" + b];
-}
+    var tree_link = container.append("svg").attr("class", "links")
+        .selectAll('svg')
+        .data(tree.links)
+        .enter()
+        .append("line")
+        .attr("stroke", "#aaa")
+        .attr("stroke-width", "10px")
+        .call(updateLink);
+
+    var tree_node = container.append('svg').attr('class', 'nodes')
+        .selectAll('svg')
+        .data(tree.nodes)
+        .enter().append('svg')
+            .attr("x", width/2)
+            .attr("y", height/2)
+            .attr("overflow", 'visible')
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+    tree_node.append("rect")
+        .attr("width", rect_width)
+        .attr("height", rect_height);
+
+    tree_node.append('text')
+        .attr('x', function(d, i) { return rect_width / 2; })
+        .attr('y', function(d, i) { return (rect_height / 2); })
+        .style('text-anchor', 'middle')
+        .style('alignment-baseline', 'middle')
+        .text(function(d) { return d.test; } ); //I need this text to wrap at a certain length.
+
+    var link_label = container.append("g").attr("class", "linklabels")
+        .selectAll("g")
+        .data(tree.links)
+        .enter()
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style('alignment-baseline', 'middle')
+        .attr("x", 0)
+        .attr("y", 0)
+        .text(function(d) { return d.text; })
+        .call(updateLinkLabel)
+
+    function ticked(){
+        tree_node.call(updateNode)
+        tree_link.call(updateLink)
+        link_label.call(updateLinkLabel)
+    };
+
+    function fixna(x) {
+        if (isFinite(x)) return x;
+        return 0;
+    }
+
+    function updateNode(node) {
+        node.attr('x', function(d) { return fixna(d.x); })
+            .attr('y', function(d) { return fixna(d.y); })
+
+    }
+
+    function updateLink(link) {
+        link.attr("x1", function(d) { return fixna(d.source.x + rect_width/2); })
+            .attr("y1", function(d) { return fixna(d.source.y + rect_height/2); })
+            .attr("x2", function(d) { return fixna(d.target.x + rect_width/2); })
+            .attr("y2", function(d) { return fixna(d.target.y + rect_height/2); });
+    }
 
 
-var svg = d3.select("#viz").attr("width", width).attr("height", height);
-var container = svg.append("g");
+    function updateLinkLabel(label) {
+        //Need to rotate the label and set the coordinate to slightly offest from the line.
+        label/*.attr("x", function(d) { return fixna((d.source.x + d.target.x)/2); })
+            .attr("y", function(d) { return fixna((d.source.y + d.target.y)/2); })*/
+            .attr("transform", function(d) { return linkLabelTransform(d.target.x, d.target.y, d.source.x, d.source.y); });
+    }
 
-svg.call(
-    d3.zoom()
-        .scaleExtent([.1, 4])
-        .on("zoom", function() { container.attr("transform", d3.event.transform); })
-);
+    function linkLabelTransform(targetx, targety, sourcex, sourcey) {
+        var padValx = 1
+        var padValy = 1.5
+        padValx = 0
+        padValy = 0
+        var angleRad = Math.atan((targety - sourcey) / (targetx - sourcex));
+        var middleX = (sourcex + targetx + rect_width) /2;
+        var middleY = (sourcey + targety + rect_height) /2;
+        var transX = middleX + (padValx * Math.sin(angleRad));
+        var transY = middleY + (padValy * Math.cos(angleRad));
+        var angleDeg = angleRad * 180 / Math.PI;
+        var transStr = "translate("+fixna(transX)+","+fixna(transY)+")rotate("+fixna(angleDeg)+")";
+        return transStr;
+    }
 
-var link = container.append("g").attr("class", "links")
-    .selectAll("g")
-    .data(graph.links)
-    .enter()
-    .append("line")
-    .attr("stroke", "#aaa")
-    .attr("stroke-width", "1px");
+    function dragstarted(d) {
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y
+    }
 
-var linkLabel = container.append("g").attr("class", "linklabels")
-    .selectAll("g")
-    .data(graph.links)
-    .enter()
-    .append("text")
-    .attr("text-anchor", "middle")
-    //.attr("x", function(d) { return (d.source.x + d.target.x)/2; })
-    .attr("x", 0)
-    //.attr("y", function(d) { return (d.source.y + d.target.y)/2; })
-    .attr("y", 0)
-    .text(function(d) { return d.text; })
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
 
-var node = container.append("g").attr("class", "nodes")
-    .selectAll("g")
-    .data(graph.nodes)
-    .enter()
-    .append("g")
-    .attr("class", "nodes")
-    .attr("x", width/2)
-    .attr("y", height/2)
+    function dragended(d) {
+        if(!d3.event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
 
-node.append("circle")
-    .filter(function(d) { return d.type == 'start'; })
-    .attr("r", 15)
-    .attr("height", 15)
-    .attr("width", 15)
-    .attr("fill", function(d) { return color(1); })
+    function rectCollide() {
+    var nodes, sizes, masses
+    var size = constant([0, 0])
+    var strength = 1
+    var iterations = 1
 
-node.append("rect")
-    .filter(function(d) { return d.type == 'decision' || d.type == 'end'; })
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", rect_width)
-    .attr("height", rect_height)
-    .attr("fill", function(d) { return color(1); })
-
-/*node.append("path")
-    .filter(function(d) { return d.type == 'end'; })
-    .attr("d", d3.symbol().type(d3.symbolTriangle).size(5000))
-    //.attr("x", function(d) { return d.x - 200/2; })
-    .attr("y", function(d) { return d.y + 5000/2; })
-    //.attr("width", 200)
-    //.attr("height", 50)
-    .attr("fill", function(d) { return color(1); })*/
-
-node.append("text")
-    .filter(function(d) { return d.type == 'decision' || d.type == 'end'; })
-    .attr("dy", ".35em")
-    .attr("x", rect_width/2)
-    .attr("y", rect_height/2)
-    .attr("text-anchor", "middle")
-    .text(function(d) { return d.test; });
-
-node.append("text")
-    .filter(function(d) { return d.type == 'start'; } )
-    .attr("dy", ".35em")
-    .attr("text-anchor", "middle")
-    .text(function(d) { return d.test; });
-
-node.on("mouseover", focus).on("mouseout", unfocus);
-
-node.call(
-    d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended)
-);
-
-//node.on("mouseover", focus).on("mouseout", unfocus);
-
-function ticked() {
-
-    node.call(updateNode);
-    link.call(updateLink);
-    linkLabel.call(updateLinkLabel)
-
-}
-
-function fixna(x) {
-    if (isFinite(x)) return x;
-    return 0;
-}
-
-//function focus(d) {
-//    var index = d3.select(d3.event.target).datum().index;
-//    node.style("opacity", function(o) {
-//        return neigh(index, o.index) ? 1 : 0.1;
-//    });
-//    /*labelNode.attr("display", function(o) {
-//      return neigh(index, o.node.index) ? "block": "none";
-//    });*/
-//    link.style("opacity", function(o) {
-//        return o.source.index == index || o.target.index == index ? 1 : 0.1;
-//    });
-//}
-//
-//function unfocus() {
-//   //labelNode.attr("display", "block");
-//   node.style("opacity", 1);
-//   link.style("opacity", 1);
-//}
-
-function rectCollide() {
-    var nodes, sizes, masses;
-    var size = constant([0,0]);
-    var strength = 1;
-    var iterations = 1;
-    console.log("HERE1");
-    function force () {
-        console.log("HERE2");
-        var node, size, mass, xi, yi;
-        var i = -1;
+    function force() {
+        var node, size, mass, xi, yi
+        var i = -1
         while (++i < iterations) { iterate() }
-        function iterate() {
-            console.log("HERE3");
-            var j = -1;
-            var tree = d3.quadtree(nodes, xCenter, yCenter).visitAfter(prepare);
-            while (++j < nodes.length) {
-                node = nodes[j];
-                size = sizes[j];
-                mass = masses[j];
-                xi = xCenter(node);
-                yi = yCenter(node);
 
-                tree.visit(apply);
+        function iterate() {
+            var j = -1
+            var tree = d3.quadtree(nodes, xCenter, yCenter).visitAfter(prepare)
+
+            while (++j < nodes.length) {
+                node = nodes[j]
+                size = sizes[j]
+                mass = masses[j]
+                xi = xCenter(node)
+                yi = yCenter(node)
+
+                tree.visit(apply)
             }
         }
 
         function apply(quad, x0, y0, x1, y1) {
-            console.log("HERE5");
-            var data = quad.data;
-            var xSize = (size[0] + quad.size[0]) / 2;
-            var ySize = (size[1] + quad.size[1]) / 2;
-            if (data) { 
-                if ( data.index <= node.index ) { return } 
-                var x = xi - xCenter(data);
-                var y = yi - yCenter(data);
-                var xd = Math.abs(x) - xSize;
-                var yd = Math.abs(y) - ySize;
+            var data = quad.data
+            var xSize = (size[0] + quad.size[0]) / 2
+            var ySize = (size[1] + quad.size[1]) / 2
+            if (data) {
+                if (data.index <= node.index) { return }
+
+                var x = xi - xCenter(data)
+                var y = yi - yCenter(data)
+                var xd = Math.abs(x) - xSize
+                var yd = Math.abs(y) - ySize
+
                 if (xd < 0 && yd < 0) {
-                        var l = Math.sqrt(x * x + y * y);
-                        var m = masses[data.index] / (mass + masses[data.index]);
-                        if (Math.abs(xd) < Math.abs(yd)) {
-                            node.vx -= (x *= xd / l * strength) * m;
-                            data.vx += x * (1 - m);
-                        } else {
-                            node.vy -= (y *= yd / l * strength) * m;
-                            data.vy += y * (1 - m);
-                        }
+                    var l = Math.sqrt(x * x + y * y)
+                    var m = masses[data.index] / (mass + masses[data.index])
+
+                    if (Math.abs(xd) < Math.abs(yd)) {
+                        node.vx -= (x *= xd / l * strength) * m
+                        data.vx += x * (1 - m)
+                    } else {
+                        node.vy -= (y *= yd / l * strength) * m
+                        data.vy += y * (1 - m)
                     }
                 }
-    
-                return x0 > xi + xSize || y0 > yi + ySize ||
-                       x1 < xi - xSize || y1 < yi - ySize;
             }
 
-        function prepare(quad) { 
-            console.log("HERE6");
+            return x0 > xi + xSize || y0 > yi + ySize ||
+                   x1 < xi - xSize || y1 < yi - ySize
+        }
+
+        function prepare(quad) {
             if (quad.data) {
-                quad.size = sizes[quad.data.index];
+                quad.size = sizes[quad.data.index]
             } else {
-                quad.size = [0, 0];
-                var i = -1;
+                quad.size = [0, 0]
+                var i = -1
                 while (++i < 4) {
                     if (quad[i] && quad[i].size) {
-                        quad.size[0] = Math.max(quad.size[0], quad[i].size[0]);
-                        quad.size[1] = Math.max(quad.size[1], quad[i].size[1]);
-                    } 
+                        quad.size[0] = Math.max(quad.size[0], quad[i].size[0])
+                        quad.size[1] = Math.max(quad.size[1], quad[i].size[1])
+                    }
                 }
             }
         }
     }
 
-    console.log("HERE7");
-    function xCenter(d) { return d.x + d.vx + sizes[d.index][0] / 2 };
-    function yCenter(d) { return d.y + d.vy + sizes[d.index][1] / 2 };
+    function xCenter(d) { return d.x + d.vx + sizes[d.index][0] / 2 }
+    function yCenter(d) { return d.y + d.vy + sizes[d.index][1] / 2 }
 
     force.initialize = function (_) {
-            console.log("HERE8");
-            sizes = (nodes = _).map(size);
-            masses = sizes.map(function (d) { return d[0] * d[1] });
-        }
-    
-        force.size = function (_) {
-            console.log("HERE9");
-            return (arguments.length
-                 ? (size = typeof _ === 'function' ? _ : constant(_), force)
-                 : size);
-        }
-    
-        force.strength = function (_) {
-            console.log("HERE11");
-            return (arguments.length ? (strength = +_, force) : strength);
-        }
-    
-        force.iterations = function (_) {
-            return (arguments.length ? (iterations = +_, force) : iterations);
-        }
-    
-        return force;
-}
-
-function boundedBox() {
-    var nodes, sizes;
-    var bounds;
-    var size = constant([0, 0]);
-
-    function force() {
-        var node, size;
-        var xi, x0, x1, yi, y0, y1;
-        var i = -1;
-        while (++i < nodes.length) {
-            node = nodes[i];
-            size = sizes[i];
-            xi = node.x + node.vx;
-            x0 = bounds[0][0] - xi;
-            x1 = bounds[1][0] - (xi + size[0]);
-            yi = node.y + node.vy;
-            y0 = bounds[0][1] - yi;
-            y1 = bounds[1][1] - (yi + size[1]);
-            if (x0 > 0 || x1 < 0) {
-                node.x += node.vx;
-                node.vx = -node.vx;
-                if (node.vx < x0) { node.x += x0 - node.vx };
-                if (node.vx > x1) { node.x += x1 - node.vx };
-            }
-            if (y0 > 0 || y1 < 0) {
-                node.y += node.vy;
-                node.vy = -node.vy;
-                if (node.vy < y0) { node.vy += y0 - node.vy };
-                if (node.vy > y1) { node.vy += y1 - node.vy };
-            }
-        }
-    }
-
-    force.initialize = function (_) {
-        sizes = (nodes = _).map(size);
-    }
-
-    force.bounds = function (_) {
-        return (arguments.length ? (bounds = _, force) : bounds);
+        sizes = (nodes = _).map(size)
+        masses = sizes.map(function (d) { return d[0] * d[1] })
     }
 
     force.size = function (_) {
         return (arguments.length
              ? (size = typeof _ === 'function' ? _ : constant(_), force)
-             : size);
+             : size)
     }
 
-    return force;
-}
+    force.strength = function (_) {
+        return (arguments.length ? (strength = +_, force) : strength)
+    }
 
+    force.iterations = function (_) {
+        return (arguments.length ? (iterations = +_, force) : iterations)
+    }
 
+    return force
+    }
 
-function updateLink(link) {
-    link.attr("x1", function(d) { return fixna(d.source.x); })
-        .attr("y1", function(d) { return fixna(d.source.y); })
-        .attr("x2", function(d) { return fixna(d.target.x); })
-        .attr("y2", function(d) { return fixna(d.target.y); });
-}
+    function constant(_) {
+        return function() { return _ }
+    }
 
-function linkLabelTransform(targetx, targety, sourcex, sourcey) {
-    var padValx = 1
-    var padValy = 1.5
-    padValx = 0
-    padValy = 0
-    var angleRad = Math.atan((targety - sourcey) / (targetx - sourcex));
-    var middleX = (sourcex + targetx) /2;
-    var middleY = (sourcey + targety) /2;
-    var transX = middleX + (padValx * Math.sin(angleRad));
-    var transY = middleY + (padValy * Math.cos(angleRad));
-    var angleDeg = angleRad * 180 / Math.PI;
-    var transStr = "translate("+fixna(transX)+","+fixna(transY)+")rotate("+fixna(angleDeg)+")";
-    return transStr;
-}
-    
-
-function updateLinkLabel(label) {
-    //Need to rotate the label and set the coordinate to slightly offest from the line.
-    label/*.attr("x", function(d) { return fixna((d.source.x + d.target.x)/2); })
-        .attr("y", function(d) { return fixna((d.source.y + d.target.y)/2); })*/
-        .attr("transform", function(d) { return linkLabelTransform(d.target.x, d.target.y, d.source.x, d.source.y); });
-}
-
-function updateNode(node) {
-    node.attr("transform", function(d) {
-        var new_x = d.x;
-        var new_y = d.y;
-        if (d.type == 'decision' || d.type == 'end') {
-            new_x -= (rect_width/2);
-            new_y -= (rect_height/2);
-        };
-
-        return "translate(" + fixna(new_x) + "," + fixna(new_y) + ")";
-    });
-}
-
-function dragstarted(d) {
-    d3.event.sourceEvent.stopPropagation();
-    if (!d3.event.active) graphLayout.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-}
-
-function dragged(d) {
-    d.fx = d3.event.x;
-    d.fy = d3.event.y;
-}
-
-function dragended(d) {
-    if (!d3.event.active) graphLayout.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-}
-
-function constant(_) { 
-    return function() { return _; };
-}
-
-}); // d3.json
-</script>
+});
+    </script>
+  </body>
 </html>
-

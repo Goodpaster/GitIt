@@ -18,6 +18,9 @@ h2 {
 	stroke: #fff;
 	stroke-width: 1.5px;
 }
+rect {
+    fill: steelblue;
+}
 
 .nodes square {
 }
