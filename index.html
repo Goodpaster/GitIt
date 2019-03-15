@@ -27,7 +27,7 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .size(function(d) { return [rect_width+10, rect_height+10] })
 
     var simulation = d3.forceSimulation()
-        .force("x", d3.forceX((width / 2) - (rect_width/2)).strength(function(d) {
+        .force("x", d3.forceX((width / 2)).strength(function(d) {
             var dict = {
                 "start": 1,
                 "end": 0,
@@ -83,8 +83,8 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .selectAll('svg')
         .data(tree.nodes)
         .enter().append('svg')
-            .attr("x", width/2)
-            .attr("y", height/2)
+            .attr("x", width/2 - rect_width/2)
+            .attr("y", height/2 - rect_height/2)
             .attr("overflow", 'visible')
             .call(d3.drag()
                 .on("start", dragstarted)
@@ -135,16 +135,16 @@ d3.json("d3_dec_tree.json").then(function(tree) {
     }
 
     function updateNode(node) {
-        node.attr('x', function(d) { return fixna(d.x); })
-            .attr('y', function(d) { return fixna(d.y); })
+        node.attr('x', function(d) { return fixna(d.x - rect_width/2); })
+            .attr('y', function(d) { return fixna(d.y - rect_height/2); })
 
     }
 
     function updateLink(link) {
-        link.attr("x1", function(d) { return fixna(d.source.x + rect_width/2); })
-            .attr("y1", function(d) { return fixna(d.source.y + rect_height/2); })
-            .attr("x2", function(d) { return fixna(d.target.x + rect_width/2); })
-            .attr("y2", function(d) { return fixna(d.target.y + rect_height/2); });
+        link.attr("x1", function(d) { return fixna(d.source.x); })
+            .attr("y1", function(d) { return fixna(d.source.y); })
+            .attr("x2", function(d) { return fixna(d.target.x); })
+            .attr("y2", function(d) { return fixna(d.target.y); });
     }
 
 
@@ -161,8 +161,8 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         padValx = 0
         padValy = 0
         var angleRad = Math.atan((targety - sourcey) / (targetx - sourcex));
-        var middleX = (sourcex + targetx + rect_width) /2;
-        var middleY = (sourcey + targety + rect_height) /2;
+        var middleX = (sourcex + targetx) /2;
+        var middleY = (sourcey + targety) /2;
         var transX = middleX + (padValx * Math.sin(angleRad));
         var transY = middleY + (padValy * Math.cos(angleRad));
         var angleDeg = angleRad * 180 / Math.PI;
