@@ -1,18 +1,37 @@
 {
   "nodes" : [
           {"id": 0, "test": "I", "level": 0, "type": "start", "git_text": null},
-          {"id": 1, "test": "Do I currently have an old version?", "level": 1, "type": "decision", "git_text": null},
+          {"id": 1, "test": "Have an old version?", "level": 1, "type": "decision", "git_text": null},
           {"id": 2, "test": "Is there already a git repository?", "level": 1, "type":"decision", "git_text": null},
-          {"id": 3, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
-          {"id": 4, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
-          {"id": 5, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
-          {"id": 6, "test": "Clone Git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"}
+          {"id": 3, "test": "Clone the git.", "level": 2, "type": "end", "git_text": "git clone [url_of_git]"},
+          {"id": 4, "test": "Is it on a branch?", "level": 2, "type": "decision", "git_text": null},
+          {"id": 5, "test": "Introduction to branches", "level": 3, "type": "end", "git_text": "[url_of_brach lesson]"},
+          {"id": 6, "test": "Pull master branch", "level": 3, "type": "decision", "git_text": "git pull origin master"},
+          {"id": 7, "test": "Pull [branch name] branch", "level": 3, "type": "decision", "git_text": "git checkout [branch name]\n git pull origin [branch name]"},
+          {"id": 8, "test": "Is the branch ready to merge to master?", "level": 3, "type": "end", "git_text": null},
+          {"id": 9, "test": "Initialize repository and push", "level": 3, "type": "end", "git_text": "On Github create new repository. Clone repository to a folder. Move code to that folder. Push to the repository."},
+          {"id": 10, "test": "Working on a branch?", "level": 3, "type": "decision", "git_text": null},
+          {"id": 11, "test": "Pull master branch", "level": 3, "type": "end", "git_text": "git pull origin master"},
+          {"id": 12, "test": "Pull [branch name] branch", "level": 3, "type": "end", "git_text": "git checkout [branch name]\n git pull origin [branch name]"},
+          {"id": 13, "test": "Is the branch ready to merge to master?", "level": 3, "type": "end", "git_text": null}
+         
   ],
  "links":[{"source": 0, "target": 1, "value": 1, "text": "need code."},
           {"source": 0, "target": 2, "value": 1,  "text": "wrote code."},
           {"source": 1, "target": 3, "value": 1,  "text": "No"},
-          {"source": 1, "target": 4, "value": 1,  "text": "No"},
-          {"source": 2, "target": 5, "value": 1,  "text": "No"},
-          {"source": 2, "target": 6, "value": 1,  "text": "No"}
+          {"source": 1, "target": 4, "value": 1,  "text": "Yes"},
+          {"source": 4, "target": 5, "value": 1,  "text": "branch?"},
+          {"source": 4, "target": 6, "value": 1,  "text": "No"},
+          {"source": 4, "target": 7, "value": 1,  "text": "Yes"},
+          {"source": 6, "target": 8, "value": 1,  "text": "No"},
+          {"source": 7, "target": 8, "value": 1,  "text": "Yes"},
+          {"source": 2, "target": 9, "value": 1,  "text": "No"},
+          {"source": 2, "target": 10, "value": 1,  "text": "Yes"},
+          {"source": 2, "target": 9, "value": 1,  "text": "No"},
+          {"source": 10, "target": 5, "value": 1,  "text": "branch?"},
+          {"source": 10, "target": 11, "value": 1,  "text": "No"},
+          {"source": 10, "target": 12, "value": 1,  "text": "No"},
+          {"source": 11, "target": 13, "value": 1,  "text": "No"},
+          {"source": 12, "target": 13, "value": 1,  "text": "No"}
   ]
 }

@@ -11,11 +11,11 @@
     <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
 
-var width = 960
-var height = 600
+var width = 1200
+var height = 1800
 d3.json("d3_dec_tree.json").then(function(tree) {
 
-    var rect_width = 200 
+    var rect_width = 200
     var rect_height = 50
     var graph = d3.select(".graph")
         .attr("width", width)
@@ -31,7 +31,7 @@ d3.json("d3_dec_tree.json").then(function(tree) {
             var dict = {
                 "start": 1,
                 "end": 0,
-                "decision": 0
+                "decision": .1
             };
             return dict[d.type];
             }))
@@ -50,7 +50,7 @@ d3.json("d3_dec_tree.json").then(function(tree) {
             };
             return dict[d.type];
             }))
-        .force('charge', d3.forceManyBody().strength(-1000)) //currently on the upper left corner of the object.
+        .force('charge', d3.forceManyBody().strength(-2000)) //currently on the upper left corner of the object.
         .force('collision', collisionForce)
         .nodes(tree.nodes)
         .force("link", d3.forceLink(tree.links).id(function(d) {return d.id; }).distance(100).strength(0.5))
@@ -100,7 +100,16 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .attr('y', function(d, i) { return (rect_height / 2); })
         .style('text-anchor', 'middle')
         .style('alignment-baseline', 'middle')
-        .text(function(d) { return d.test; } ); //I need this text to wrap at a certain length.
+        .text(function(d) { return d.test; } ) 
+        .call(wrap, rect_width - 10);
+
+    tree_node.append('text')
+        .attr('x', function(d, i) { return rect_width / 2; })
+        .attr('y', function(d, i) { return (rect_height / 2) + 16; })
+        .style('text-anchor', 'middle')
+        .style('alignment-baseline', 'middle')
+        .text(function(d) { return d.git_text; } )
+        .call(wrap, rect_width - 10);
 
     var link_label = container.append("g").attr("class", "linklabels")
         .selectAll("g")
@@ -277,6 +286,33 @@ d3.json("d3_dec_tree.json").then(function(tree) {
 
     function constant(_) {
         return function() { return _ }
+    }
+
+    function wrap(text, width) {
+        text.each(function () {
+            var text = d3.select(this),
+                words = text.text().split(/\n/).reverse(),
+                word,
+                line = [],
+                lineNumber = -1,
+                lineHeight = 1.1, // ems
+                x = text.attr("x"),
+                y = text.attr("y"),
+                dy = 0, //parseFloat(text.attr("dy")),
+                tspan = text.text(null)
+                        .append("tspan")
+                        .attr("x", x)
+                        .attr("y", y)
+                        .attr("dy", dy + "em");
+            while (word = words.pop()) {
+                tspan = text.append("tspan")
+                            .attr("x", x)
+                            .attr("y", y)
+                            .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                            .text(word);
+             
+            }
+        });
     }
 
 });
