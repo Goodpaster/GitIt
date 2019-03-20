@@ -7,7 +7,7 @@ h2 {
 }
 
 .links line {
-	strok: #999;
+	stroke: #999;
 	stroke-opacity: 0.6;
 }
 
@@ -34,4 +34,6 @@ rect {
 .nodes git_text {
 }
 
-
+text {
+   font-size: 28px;
+} 

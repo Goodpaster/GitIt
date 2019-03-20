@@ -5,18 +5,18 @@
     <link rel="stylesheet" type="text/css" href="style.css">
   </head>
   <body>
-    <h1>Follow the git command road...</h1>
+    <h1>Follow the git command road...(scroll right)</h1>
     <h2>By Daniel Graham </h2>
     <svg class='graph'></svg>
     <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
     <script type="text/javascript">
 
-var width = 1200
-var height = 1800
+var width = 5000
+var height = 5000
 d3.json("d3_dec_tree.json").then(function(tree) {
 
-    var rect_width = 200
-    var rect_height = 50
+    var rect_width = 500
+    var rect_height = 250
     var graph = d3.select(".graph")
         .attr("width", width)
         .attr("height", height);
@@ -27,33 +27,40 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .size(function(d) { return [rect_width+10, rect_height+10] })
 
     var simulation = d3.forceSimulation()
-        .force("x", d3.forceX((width / 2)).strength(function(d) {
+        .force("x", d3.forceX(function(d){
+            var dict = {
+                "right": width - rect_width,
+                "left":0 + rect_width,
+                "middle":width/2
+            };
+            return dict[d.lean];
+            }).strength(function(d) {
             var dict = {
                 "start": 1,
-                "end": 0,
-                "decision": .1
+                "end": 1,
+                "decision": .00
             };
             return dict[d.type];
             }))
         .force("y", d3.forceY(function(d) {
             var dict = {
-                "start": 0,
-                 "end": height,
-                 "decision": height
+                "start": 0 + rect_height/2,
+                 "end": height - rect_height/2,
+                 "decision": height - rect_height/2
             };
             return dict[d.type];
             }).strength(function(d) {
             var dict = {
-                "start": 1,
-                "end": 0.1,
-                "decision": 0
+                "start": 10,
+                "end": 0.05,
+                "decision": 0.02
             };
             return dict[d.type];
             }))
-        .force('charge', d3.forceManyBody().strength(-2000)) //currently on the upper left corner of the object.
+//        .force('charge', d3.forceManyBody().strength(-5000))
         .force('collision', collisionForce)
         .nodes(tree.nodes)
-        .force("link", d3.forceLink(tree.links).id(function(d) {return d.id; }).distance(100).strength(0.5))
+        .force("link", d3.forceLink(tree.links).id(function(d) {return d.id; }).distance(800).strength(1))
         .on('tick', ticked)
 
     var label = {
@@ -79,12 +86,28 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .attr("stroke-width", "10px")
         .call(updateLink);
 
+
+    //initialize initial and end nodes near top and bottom.
     var tree_node = container.append('svg').attr('class', 'nodes')
         .selectAll('svg')
         .data(tree.nodes)
         .enter().append('svg')
-            .attr("x", width/2 - rect_width/2)
-            .attr("y", height/2 - rect_height/2)
+            .attr("x", function(d){
+                var dict = {
+                    "right": width,
+                    "left": 0,
+                    "middle": width/2
+                };
+                return dict[d.lean];
+                })
+            .attr("y", function(d) {
+                var dict = {
+                    "start": (0-rect_height/2),
+                    "decision": (height/2 - rect_height/2),
+                    "end": (height - rect_height/2)
+                };
+                return dict[d.type];
+                })
             .attr("overflow", 'visible')
             .call(d3.drag()
                 .on("start", dragstarted)
@@ -104,9 +127,9 @@ d3.json("d3_dec_tree.json").then(function(tree) {
         .call(wrap, rect_width - 10);
 
     tree_node.append('text')
-        .attr('x', function(d, i) { return rect_width / 2; })
-        .attr('y', function(d, i) { return (rect_height / 2) + 16; })
-        .style('text-anchor', 'middle')
+        .attr('x', 10)//function(d, i) { return rect_width / 2; })
+        .attr('y', function(d, i) { return (rect_height / 2) + 28; })
+        .style('text-anchor', 'inherit')
         .style('alignment-baseline', 'middle')
         .text(function(d) { return d.git_text; } )
         .call(wrap, rect_width - 10);
